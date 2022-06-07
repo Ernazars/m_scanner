@@ -284,10 +284,13 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
       }
     },
     onDone: () {
+      // widget.onErrorConnectWS("Соединение было потеряно на стороне клиента");
       channel = null;
     },
     onError: (_) {
       channel = null;
+      print("onError_ $_");
+      // widget.onErrorConnectWS(_);
     });
   }
 
