@@ -275,7 +275,7 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
 
   listenWs() {
     channel!.stream.listen((message) {
-      final Map<String, String> result = jsonDecode(message);
+      Map<String, String> result = json.decode(message);
       isLoading.value = false;
       if (result.containsKey('key')) {
         widget.onSuccess(result['key']);
@@ -695,7 +695,7 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
                                                 // refreshAlreadyCapturedImages();
                                               }
                                             }else {
-                                              widget.onErrorConnectWS;
+                                              widget.onErrorConnectWS("");
                                               // show(context, "Потеряно соединение с сервером, попробуйте снова");
                                             }
                                           },
