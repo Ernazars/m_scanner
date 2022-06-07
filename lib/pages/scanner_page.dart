@@ -22,7 +22,7 @@ class ScannerPage extends StatefulWidget {
   final String wsUrl;
   final ValueChanged onSuccess;
   final ValueChanged onError;
-  final Widget onErrorConnectWS;
+  final ValueChanged onErrorConnectWS;
 
   @override
   _ScannerPageState createState() => _ScannerPageState();
