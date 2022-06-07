@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
@@ -5,15 +6,21 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_native_image/flutter_native_image.dart';
-import 'package:mega_scanner/pages/preview_page.dart';
 import 'package:mega_scanner/widgets/oval_clipper.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:web_socket_channel/io.dart';
-import 'package:web_socket_channel/status.dart' as status;
 
 class ScannerPage extends StatefulWidget {
-  const ScannerPage({Key? key}) : super(key: key);
+  const ScannerPage(
+      {required this.wsUrl,
+      required this.onSuccess,
+      required this.onError,
+      Key? key})
+      : super(key: key);
+
+  final String wsUrl;
+  final ValueChanged onSuccess;
+  final ValueChanged onError;
 
   @override
   _ScannerPageState createState() => _ScannerPageState();
@@ -22,9 +29,10 @@ class ScannerPage extends StatefulWidget {
 class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
   List<CameraDescription> cameras = [];
   CameraController? controller;
-  final channel = IOWebSocketChannel.connect('ws://164.92.179.69/ws/');
+  late final IOWebSocketChannel
+      channel; // = IOWebSocketChannel.connect('ws://164.92.179.69/ws/');
 
-  File? _imageFile;
+  // File? _imageFile;
   ValueNotifier isLoading = ValueNotifier(false);
 
   // Initial values
@@ -62,7 +70,7 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
       });
       // Set and initialize the new camera
       onNewCameraSelected(cameras[0]);
-      refreshAlreadyCapturedImages();
+      // refreshAlreadyCapturedImages();
     } else {
       log('Camera Permission: DENIED');
     }
@@ -100,31 +108,31 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
     // return await compressedFile.readAsBytes();
   }
 
-  refreshAlreadyCapturedImages() async {
-    final directory = await getApplicationDocumentsDirectory();
-    List<FileSystemEntity> fileList = await directory.list().toList();
-    allFileList.clear();
-    List<Map<int, dynamic>> fileNames = [];
+  // refreshAlreadyCapturedImages() async {
+  //   final directory = await getApplicationDocumentsDirectory();
+  //   List<FileSystemEntity> fileList = await directory.list().toList();
+  //   allFileList.clear();
+  //   List<Map<int, dynamic>> fileNames = [];
 
-    for (var file in fileList) {
-      if (file.path.contains('.jpg')) {
-        allFileList.add(File(file.path));
+  //   for (var file in fileList) {
+  //     if (file.path.contains('.jpg')) {
+  //       allFileList.add(File(file.path));
 
-        String name = file.path.split('/').last.split('.').first;
-        fileNames.add({0: int.parse(name), 1: file.path.split('/').last});
-      }
-    }
+  //       String name = file.path.split('/').last.split('.').first;
+  //       fileNames.add({0: int.parse(name), 1: file.path.split('/').last});
+  //     }
+  //   }
 
-    if (fileNames.isNotEmpty) {
-      final recentFile = fileNames
-          .reduce((current, next) => current[0] > next[0] ? current : next);
-      String recentFileName = recentFile[1];
+  //   if (fileNames.isNotEmpty) {
+  //     final recentFile = fileNames
+  //         .reduce((current, next) => current[0] > next[0] ? current : next);
+  //     String recentFileName = recentFile[1];
 
-      _imageFile = File('${directory.path}/$recentFileName');
+  //     _imageFile = File('${directory.path}/$recentFileName');
 
-      setState(() {});
-    }
-  }
+  //     setState(() {});
+  //   }
+  // }
 
   Future<XFile?> takePicture() async {
     final CameraController? cameraController = controller;
@@ -261,15 +269,19 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
 
   @override
   void initState() {
+    channel = IOWebSocketChannel.connect(widget.wsUrl);
     initCamera();
-    // Hide the status bar in Android
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
     getPermissionStatus();
     super.initState();
     channel.stream.listen((message) {
-      show(context, message);
-      print("message $message");
-      print("message2 ${status.goingAway}");
+      final Map<String, String> result = jsonDecode(message);
+      isLoading.value = false;
+      if (result.containsKey('key')) {
+        widget.onSuccess(result['key']);
+      } else {
+        widget.onError(result['error']);
+      }
     });
   }
 
@@ -291,6 +303,8 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
+        overlays: SystemUiOverlay.values);
     controller?.dispose();
     super.dispose();
   }
@@ -583,42 +597,42 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
                                       children: [
-                                        InkWell(
-                                          onTap: _imageFile != null
-                                              ? () {
-                                                  Navigator.of(context).push(
-                                                    MaterialPageRoute(
-                                                      builder: (context) =>
-                                                          PreviewPage(
-                                                        imageFile: _imageFile!,
-                                                        fileList: allFileList,
-                                                      ),
-                                                    ),
-                                                  );
-                                                }
-                                              : null,
-                                          child: Container(
-                                            width: 60,
-                                            height: 60,
-                                            decoration: BoxDecoration(
-                                              color: Colors.black,
-                                              borderRadius:
-                                                  BorderRadius.circular(10.0),
-                                              border: Border.all(
-                                                color: Colors.white,
-                                                width: 2,
-                                              ),
-                                              image: _imageFile != null
-                                                  ? DecorationImage(
-                                                      image: FileImage(
-                                                          _imageFile!),
-                                                      fit: BoxFit.cover,
-                                                    )
-                                                  : null,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 32),
+                                        // InkWell(
+                                        //   onTap: _imageFile != null
+                                        //       ? () {
+                                        //           Navigator.of(context).push(
+                                        //             MaterialPageRoute(
+                                        //               builder: (context) =>
+                                        //                   PreviewPage(
+                                        //                 imageFile: _imageFile!,
+                                        //                 fileList: allFileList,
+                                        //               ),
+                                        //             ),
+                                        //           );
+                                        //         }
+                                        //       : null,
+                                        //   child: Container(
+                                        //     width: 60,
+                                        //     height: 60,
+                                        //     decoration: BoxDecoration(
+                                        //       color: Colors.black,
+                                        //       borderRadius:
+                                        //           BorderRadius.circular(10.0),
+                                        //       border: Border.all(
+                                        //         color: Colors.white,
+                                        //         width: 2,
+                                        //       ),
+                                        //       image: _imageFile != null
+                                        //           ? DecorationImage(
+                                        //               image: FileImage(
+                                        //                   _imageFile!),
+                                        //               fit: BoxFit.cover,
+                                        //             )
+                                        //           : null,
+                                        //     ),
+                                        //   ),
+                                        // ),
+                                        // const SizedBox(width: 32),
                                         InkWell(
                                           onTap: () async {
                                             _getOffset(_key);
@@ -627,32 +641,31 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
                                             if (rawImage != null) {
                                               File imageFile = await cropImage(
                                                   rawImage.path);
-                                              // File(rawImage.path);
                                               imageFile.readAsBytes().then(
                                                   (bites) =>
                                                       channel.sink.add(bites));
                                               isLoading.value = true;
 
-                                              int currentUnix = DateTime.now()
-                                                  .millisecondsSinceEpoch;
+                                              // int currentUnix = DateTime.now()
+                                              //     .millisecondsSinceEpoch;
 
-                                              final directory =
-                                                  await getApplicationDocumentsDirectory();
+                                              // final directory =
+                                              //     await getApplicationDocumentsDirectory();
 
-                                              String fileFormat = imageFile.path
-                                                  .split('.')
-                                                  .last;
+                                              // String fileFormat = imageFile.path
+                                              //     .split('.')
+                                              //     .last;
 
-                                              log(fileFormat);
+                                              // log(fileFormat);
 
-                                              await imageFile.copy(
-                                                '${directory.path}/$currentUnix.$fileFormat',
-                                              );
+                                              // await imageFile.copy(
+                                              //   '${directory.path}/$currentUnix.$fileFormat',
+                                              // );
                                               // await cropImg.copy(
                                               //   '${directory.path}/${currentUnix}1.$cropFileFormat',
                                               // );
 
-                                              refreshAlreadyCapturedImages();
+                                              // refreshAlreadyCapturedImages();
                                             }
                                           },
                                           child: Stack(
