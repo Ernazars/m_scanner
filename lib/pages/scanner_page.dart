@@ -10,14 +10,13 @@ import 'package:mega_scanner/widgets/oval_clipper.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:web_socket_channel/io.dart';
 
-import '../widgets/error_connect_web_socket_data.dart';
-
 class ScannerPage extends StatefulWidget {
   const ScannerPage(
       {required this.wsUrl,
       required this.onSuccess,
       required this.onError,
       required this.onErrorConnectWS,
+      required this.onErrorConnectWSMessage,
       Key? key})
       : super(key: key);
 
@@ -25,6 +24,7 @@ class ScannerPage extends StatefulWidget {
   final ValueChanged onSuccess;
   final ValueChanged onError;
   final ValueChanged onErrorConnectWS;
+  final ValueChanged onErrorConnectWSMessage;
 
   @override
   _ScannerPageState createState() => _ScannerPageState();
@@ -278,7 +278,6 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
   }
 
   listenWs() {
-    String? errorMessage;
     channel!.stream.listen((message) {
       final result = json.decode(message);
       isLoading.value = false;
@@ -289,12 +288,12 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
       }
     },
     onDone: () {
-      widget.onErrorConnectWS(ErrorConnectWebSocketData(reConnectWs: () => reConnectWs(), errorMessage: errorMessage));
+      widget.onErrorConnectWS(reConnectWs());
       channel = null;
       isCheck.value = false;
     },
     onError: (_) {
-      errorMessage = _.toString();
+      widget.onErrorConnectWSMessage(_);
     },
     cancelOnError: true);
   }
