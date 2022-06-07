@@ -275,7 +275,7 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
 
   listenWs() {
     channel!.stream.listen((message) {
-      Map<String, String> result = json.decode(message);
+      final result = json.decode(message);
       isLoading.value = false;
       if (result.containsKey('key')) {
         widget.onSuccess(result['key']);
