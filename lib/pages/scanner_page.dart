@@ -294,7 +294,7 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
       isCheck.value = false;
     },
     onError: (_) {
-      errorMessage = _;
+      errorMessage = _.toString();
     },
     cancelOnError: true);
   }
