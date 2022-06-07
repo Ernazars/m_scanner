@@ -15,12 +15,14 @@ class ScannerPage extends StatefulWidget {
       {required this.wsUrl,
       required this.onSuccess,
       required this.onError,
+      required this.onErrorConnectWS,
       Key? key})
       : super(key: key);
 
   final String wsUrl;
   final ValueChanged onSuccess;
   final ValueChanged onError;
+  final Widget onErrorConnectWS;
 
   @override
   _ScannerPageState createState() => _ScannerPageState();
@@ -29,7 +31,7 @@ class ScannerPage extends StatefulWidget {
 class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
   List<CameraDescription> cameras = [];
   CameraController? controller;
-  late final IOWebSocketChannel
+  late final IOWebSocketChannel?
       channel; // = IOWebSocketChannel.connect('ws://164.92.179.69/ws/');
 
   // File? _imageFile;
@@ -85,9 +87,9 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
     }
   }
 
-  ovalRect() {
+  ovalRect(double aspect) {
     double left = (size!.width - 180) / 2;
-    top = (size!.height - 180) / 2;
+    top = (size!.width * aspect - 180) / 2;
     rect = Rect.fromLTWH(left, top!, 180, 180);
   }
 
@@ -95,9 +97,9 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
     File image = File(path);
     var decodedImage = await decodeImageFromList(image.readAsBytesSync());
     double width = ((180 / size!.width) * decodedImage.width);
-    double height = ((180 / size!.height) * decodedImage.height);
+    double height = ((180 / (size!.width * controller!.value.aspectRatio)) * decodedImage.height);
     double originX = (_x! / size!.width) * decodedImage.width;
-    double originY = (_y! / size!.height) * decodedImage.height;
+    double originY = (_y! / (size!.width * controller!.value.aspectRatio)) * decodedImage.height;
     File croppedFile = await FlutterNativeImage.cropImage(
         path, originY.toInt(), originX.toInt(), height.toInt(), width.toInt());
     File compressedFile = await FlutterNativeImage.compressImage(
@@ -139,6 +141,9 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
 
     if (cameraController!.value.isTakingPicture) {
       return null;
+    }
+    if(channel == null) {
+      reConnectWs();
     }
 
     try {
@@ -204,6 +209,7 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
         _isCameraInitialized = controller!.value.isInitialized;
       });
     }
+    ovalRect(controller!.value.aspectRatio);
   }
 
   void onViewFinderTap(TapDownDetails details, BoxConstraints constraints) {
@@ -267,14 +273,8 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
     ]);
   }
 
-  @override
-  void initState() {
-    channel = IOWebSocketChannel.connect(widget.wsUrl);
-    initCamera();
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
-    getPermissionStatus();
-    super.initState();
-    channel.stream.listen((message) {
+  listenWs() {
+    channel!.stream.listen((message) {
       final Map<String, String> result = jsonDecode(message);
       isLoading.value = false;
       if (result.containsKey('key')) {
@@ -282,7 +282,34 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
       } else {
         widget.onError(result['error']);
       }
+    },
+    onDone: () {
+      channel = null;
     });
+  }
+
+  reConnectWs(){    
+      channel = IOWebSocketChannel.connect(widget.wsUrl);
+      listenWs();
+  }
+
+  @override
+  void initState() {
+    channel = IOWebSocketChannel.connect(widget.wsUrl);
+    initCamera();
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
+    getPermissionStatus();
+    super.initState();
+    // channel.stream.listen((message) {
+    //   final Map<String, String> result = jsonDecode(message);
+    //   isLoading.value = false;
+    //   if (result.containsKey('key')) {
+    //     widget.onSuccess(result['key']);
+    //   } else {
+    //     widget.onError(result['error']);
+    //   }
+    // });
+    listenWs();
   }
 
   @override
@@ -312,7 +339,6 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     size = MediaQuery.of(context).size;
-    ovalRect();
     final deviceRatio = size!.width / size!.height;
     return SafeArea(
       child: Scaffold(
@@ -638,34 +664,39 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
                                             _getOffset(_key);
                                             XFile? rawImage =
                                                 await takePicture();
-                                            if (rawImage != null) {
-                                              File imageFile = await cropImage(
-                                                  rawImage.path);
-                                              imageFile.readAsBytes().then(
-                                                  (bites) =>
-                                                      channel.sink.add(bites));
-                                              isLoading.value = true;
+                                            if(channel != null){
+                                              if (rawImage != null) {
+                                                File imageFile = await cropImage(
+                                                    rawImage.path);
+                                                imageFile.readAsBytes().then(
+                                                    (bites) =>
+                                                        channel!.sink.add(bites));
+                                                isLoading.value = true;
 
-                                              // int currentUnix = DateTime.now()
-                                              //     .millisecondsSinceEpoch;
+                                                // int currentUnix = DateTime.now()
+                                                //     .millisecondsSinceEpoch;
 
-                                              // final directory =
-                                              //     await getApplicationDocumentsDirectory();
+                                                // final directory =
+                                                //     await getApplicationDocumentsDirectory();
 
-                                              // String fileFormat = imageFile.path
-                                              //     .split('.')
-                                              //     .last;
+                                                // String fileFormat = imageFile.path
+                                                //     .split('.')
+                                                //     .last;
 
-                                              // log(fileFormat);
+                                                // log(fileFormat);
 
-                                              // await imageFile.copy(
-                                              //   '${directory.path}/$currentUnix.$fileFormat',
-                                              // );
-                                              // await cropImg.copy(
-                                              //   '${directory.path}/${currentUnix}1.$cropFileFormat',
-                                              // );
+                                                // await imageFile.copy(
+                                                //   '${directory.path}/$currentUnix.$fileFormat',
+                                                // );
+                                                // await cropImg.copy(
+                                                //   '${directory.path}/${currentUnix}1.$cropFileFormat',
+                                                // );
 
-                                              // refreshAlreadyCapturedImages();
+                                                // refreshAlreadyCapturedImages();
+                                              }
+                                            }else {
+                                              widget.onErrorConnectWS;
+                                              // show(context, "Потеряно соединение с сервером, попробуйте снова");
                                             }
                                           },
                                           child: Stack(
