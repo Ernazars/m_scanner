@@ -10,6 +10,8 @@ import 'package:mega_scanner/widgets/oval_clipper.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:web_socket_channel/io.dart';
 
+import '../widgets/error_connect_web_socket_data.dart';
+
 class ScannerPage extends StatefulWidget {
   const ScannerPage(
       {required this.wsUrl,
@@ -60,6 +62,8 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
   final resolutionPresets = ResolutionPreset.values;
 
   ResolutionPreset currentResolutionPreset = ResolutionPreset.high;
+
+  final ValueNotifier<bool> isCheck = ValueNotifier<bool>(true);
 
   getPermissionStatus() async {
     await Permission.camera.request();
@@ -142,9 +146,9 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
     if (cameraController!.value.isTakingPicture) {
       return null;
     }
-    if(channel == null) {
-      reConnectWs();
-    }
+    // if(channel == null) {
+    //   reConnectWs();
+    // }
 
     try {
       return await cameraController.takePicture();
@@ -274,6 +278,7 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
   }
 
   listenWs() {
+    String? errorMessage;
     channel!.stream.listen((message) {
       final result = json.decode(message);
       isLoading.value = false;
@@ -284,18 +289,19 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
       }
     },
     onDone: () {
-      // widget.onErrorConnectWS("Соединение было потеряно на стороне клиента");
+      widget.onErrorConnectWS(ErrorConnectWebSocketData(reConnectWs: reConnectWs(), errorMessage: errorMessage));
       channel = null;
+      isCheck.value = false;
     },
     onError: (_) {
-      channel = null;
-      print("onError_ $_");
-      // widget.onErrorConnectWS(_);
-    });
+      errorMessage = _;
+    },
+    cancelOnError: true);
   }
 
   reConnectWs(){    
       channel = IOWebSocketChannel.connect(widget.wsUrl);
+      isCheck.value = true;
       listenWs();
   }
 
@@ -665,61 +671,63 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
                                         //   ),
                                         // ),
                                         // const SizedBox(width: 32),
-                                        InkWell(
-                                          onTap: () async {
-                                            _getOffset(_key);
-                                            XFile? rawImage =
-                                                await takePicture();
-                                            if(channel != null){
-                                              if (rawImage != null) {
-                                                File imageFile = await cropImage(
-                                                    rawImage.path);
-                                                imageFile.readAsBytes().then(
-                                                    (bites) =>
-                                                        channel!.sink.add(bites));
-                                                isLoading.value = true;
-
-                                                // int currentUnix = DateTime.now()
-                                                //     .millisecondsSinceEpoch;
-
-                                                // final directory =
-                                                //     await getApplicationDocumentsDirectory();
-
-                                                // String fileFormat = imageFile.path
-                                                //     .split('.')
-                                                //     .last;
-
-                                                // log(fileFormat);
-
-                                                // await imageFile.copy(
-                                                //   '${directory.path}/$currentUnix.$fileFormat',
-                                                // );
-                                                // await cropImg.copy(
-                                                //   '${directory.path}/${currentUnix}1.$cropFileFormat',
-                                                // );
-
-                                                // refreshAlreadyCapturedImages();
-                                              }
-                                            }else {
-                                              widget.onErrorConnectWS("");
-                                              // show(context, "Потеряно соединение с сервером, попробуйте снова");
-                                            }
-                                          },
-                                          child: Stack(
-                                            alignment: Alignment.center,
-                                            children: const [
-                                              Icon(
-                                                Icons.circle,
-                                                color: Colors.white38,
-                                                size: 80,
-                                              ),
-                                              Icon(
-                                                Icons.circle,
-                                                color: Colors.white,
-                                                size: 65,
-                                              ),
-                                            ],
-                                          ),
+                                        ValueListenableBuilder(
+                                          valueListenable: isCheck,
+                                          builder: (context, value, child) => SizedBox(
+                                          child: isCheck.value
+                                            ? InkWell(
+                                            onTap: () async {
+                                              _getOffset(_key);
+                                              XFile? rawImage =
+                                                  await takePicture();
+                                                if (rawImage != null) {
+                                                  File imageFile = await cropImage(
+                                                      rawImage.path);
+                                                  imageFile.readAsBytes().then(
+                                                      (bites) =>
+                                                          channel!.sink.add(bites));
+                                                  isLoading.value = true;
+                                        
+                                                  // int currentUnix = DateTime.now()
+                                                  //     .millisecondsSinceEpoch;
+                                        
+                                                  // final directory =
+                                                  //     await getApplicationDocumentsDirectory();
+                                        
+                                                  // String fileFormat = imageFile.path
+                                                  //     .split('.')
+                                                  //     .last;
+                                        
+                                                  // log(fileFormat);
+                                        
+                                                  // await imageFile.copy(
+                                                  //   '${directory.path}/$currentUnix.$fileFormat',
+                                                  // );
+                                                  // await cropImg.copy(
+                                                  //   '${directory.path}/${currentUnix}1.$cropFileFormat',
+                                                  // );
+                                        
+                                                  // refreshAlreadyCapturedImages();
+                                                }
+                                            },
+                                            child: Stack(
+                                              alignment: Alignment.center,
+                                              children: const [
+                                                Icon(
+                                                  Icons.circle,
+                                                  color: Colors.white38,
+                                                  size: 80,
+                                                ),
+                                                Icon(
+                                                  Icons.circle,
+                                                  color: Colors.white,
+                                                  size: 65,
+                                                ),
+                                              ],
+                                            ),
+                                          )
+                                          : const SizedBox()
+                                          )
                                         ),
                                       ],
                                     ),
