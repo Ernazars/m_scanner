@@ -31,7 +31,7 @@ class ScannerPage extends StatefulWidget {
 class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
   List<CameraDescription> cameras = [];
   CameraController? controller;
-  late final IOWebSocketChannel?
+  IOWebSocketChannel?
       channel; // = IOWebSocketChannel.connect('ws://164.92.179.69/ws/');
 
   // File? _imageFile;
@@ -284,6 +284,9 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
       }
     },
     onDone: () {
+      channel = null;
+    },
+    onError: (_) {
       channel = null;
     });
   }
