@@ -324,25 +324,19 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
 
   @override
   void initState() {
-    if(_isCameraInitialized){
-        ovalRect(controller!.value.aspectRatio);
-        _wsUrl = widget.wsUrl;
-        channel = IOWebSocketChannel.connect(widget.wsUrl);
-        listenWs();
-      }
-    // WidgetsBinding.instance?.addPostFrameCallback((_){
-    //   if(controller?.value.isInitialized?? false){
-    //     ovalRect(controller!.value.aspectRatio);
-    //     _wsUrl = widget.wsUrl;
-    //     channel = IOWebSocketChannel.connect(widget.wsUrl);
-    //     listenWs();
-    //   }
-    // });
     // _wsUrl = widget.wsUrl;
     // channel = IOWebSocketChannel.connect(widget.wsUrl);
     initCamera();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
     getPermissionStatus();
+    WidgetsBinding.instance?.addPostFrameCallback((_){
+      if(controller?.value.isInitialized?? false){
+        ovalRect(controller!.value.aspectRatio);
+        _wsUrl = widget.wsUrl;
+        channel = IOWebSocketChannel.connect(widget.wsUrl);
+        listenWs();
+      }
+    });
     super.initState();
   }
 
