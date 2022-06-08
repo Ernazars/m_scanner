@@ -315,6 +315,7 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
       channel = IOWebSocketChannel.connect(_wsUrl);
       isCheck.value = true;
       listenWs();
+      isLoading.value = false;
   }
 
   @override
