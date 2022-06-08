@@ -303,9 +303,11 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
     },
     onError: (_) {
       errorWS = _.toString();
+      // channel = null;
       // widget.onErrorConnectWSMessage(_.toString());
     },
-    cancelOnError: true);
+    // cancelOnError: true
+    );
   }
 
   reConnectWs(){
