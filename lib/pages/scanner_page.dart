@@ -9,6 +9,7 @@ import 'package:flutter_native_image/flutter_native_image.dart';
 import 'package:mega_scanner/widgets/oval_clipper.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:web_socket_channel/io.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 class ScannerPage extends StatefulWidget {
   const ScannerPage(
@@ -303,7 +304,7 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
       // show(context, errorWS ?? "Соединение потеряно, попробуйте ещё раз");
     },
     onError: (_) {
-      widget.onErrorConnectWSMessage(_.toString());
+      widget.onErrorConnectWSMessage(_.message);
     },
     );
   }
