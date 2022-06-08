@@ -297,7 +297,6 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
       channel = null;
       isCheck.value = false;
       show(context, errorWS ?? "Соединение потеряно, попробуйте ещё раз");
-      print("#################### ON DONE");
     },
     onError: (_) {
       errorWS = _.toString();
@@ -307,13 +306,12 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
   }
 
   reConnectWs(){
-      print("################");
-
       channel = IOWebSocketChannel.connect(_wsUrl);
-      // Navigator.pop(context);
+
+      if(channel == null) show(context, "Соединение потеряно, попробуйте ещё раз");
+
       isCheck.value = true;
       listenWs();
-      print("################2");
   }
 
   @override
