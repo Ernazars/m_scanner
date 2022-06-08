@@ -252,6 +252,9 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
                     onTap: () {
                       reConnectWs();
                       Navigator.pop(context);
+                      if(channel == null) {
+                        show(context, message);
+                      }
                     },
                     child: Container(
                       decoration: BoxDecoration(
@@ -307,9 +310,7 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
 
   reConnectWs(){
       channel = IOWebSocketChannel.connect(_wsUrl);
-
-      if(channel == null) show(context, "Соединение потеряно, попробуйте ещё раз");
-
+      print("CHANNEL $channel");
       isCheck.value = true;
       listenWs();
   }
