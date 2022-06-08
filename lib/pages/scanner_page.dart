@@ -36,6 +36,8 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
   IOWebSocketChannel?
       channel; // = IOWebSocketChannel.connect('ws://164.92.179.69/ws/');
 
+  late String _wsUrl;
+
   // File? _imageFile;
   ValueNotifier isLoading = ValueNotifier(false);
 
@@ -304,7 +306,8 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
 
   reConnectWs(){
       print("################");
-      channel = IOWebSocketChannel.connect(widget.wsUrl);
+
+      channel = IOWebSocketChannel.connect(_wsUrl);
       // Navigator.pop(context);
       isCheck.value = true;
       listenWs();
@@ -313,6 +316,7 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
 
   @override
   void initState() {
+    _wsUrl = widget.wsUrl;
     channel = IOWebSocketChannel.connect(widget.wsUrl);
     initCamera();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
