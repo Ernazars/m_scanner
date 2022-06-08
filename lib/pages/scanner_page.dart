@@ -310,11 +310,13 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
   }
 
   reConnectWs(){
+      isLoading.value = true;
       channel = IOWebSocketChannel.connect(_wsUrl);
       isCheck.value = true;
       listenWs();
       if(channel == null) {
-        widget.onErrorConnectWS(()=> reConnectWs());
+        // isLoading.value = false;
+        // widget.onErrorConnectWS(()=> reConnectWs());
         // show(context, message);
       }
   }
