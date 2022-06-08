@@ -300,7 +300,7 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
 
   reConnectWs(){    
       channel = IOWebSocketChannel.connect(widget.wsUrl);
-      Navigator.pop(context);
+      // Navigator.pop(context);
       isCheck.value = true;
       listenWs();
   }
