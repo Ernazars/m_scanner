@@ -15,16 +15,16 @@ class ScannerPage extends StatefulWidget {
       {required this.wsUrl,
       required this.onSuccess,
       required this.onError,
-      // required this.onErrorConnectWS,
-      // required this.onErrorConnectWSMessage,
+      required this.onErrorConnectWS,
+      required this.onErrorConnectWSMessage,
       Key? key})
       : super(key: key);
 
   final String wsUrl;
   final ValueChanged onSuccess;
   final ValueChanged onError;
-  // final ValueChanged onErrorConnectWS;
-  // final ValueChanged onErrorConnectWSMessage;
+  final ValueChanged onErrorConnectWS;
+  final ValueChanged onErrorConnectWSMessage;
 
   @override
   _ScannerPageState createState() => _ScannerPageState();
@@ -284,7 +284,6 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
   }
 
   listenWs() {
-    String? errorWS;
     channel!.stream.listen((message) {
       final result = json.decode(message);
       isLoading.value = false;
@@ -295,26 +294,25 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
       }
     },
     onDone: () {
-      // widget.onErrorConnectWS(()=> reConnectWs());
-      // show(context, errorWS ?? "Соединение потеряно, попробуйте ещё раз");
+      widget.onErrorConnectWS(()=> reConnectWs());
       channel = null;
       isCheck.value = false;
-      show(context, errorWS ?? "Соединение потеряно, попробуйте ещё раз");
+      // show(context, errorWS ?? "Соединение потеряно, попробуйте ещё раз");
     },
     onError: (_) {
-      errorWS = _.toString();
-      // channel = null;
-      // widget.onErrorConnectWSMessage(_.toString());
+      widget.onErrorConnectWSMessage(_.toString());
     },
-    // cancelOnError: true
     );
   }
 
   reConnectWs(){
       channel = IOWebSocketChannel.connect(_wsUrl);
-      print("CHANNEL $channel");
       isCheck.value = true;
       listenWs();
+      if(channel == null) {
+        widget.onErrorConnectWS(()=> reConnectWs());
+        // show(context, message);
+      }
   }
 
   @override
