@@ -216,6 +216,9 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
       });
     }
     ovalRect(controller!.value.aspectRatio);
+    _wsUrl = widget.wsUrl;
+    channel = IOWebSocketChannel.connect(widget.wsUrl);
+    listenWs();
   }
 
   void onViewFinderTap(TapDownDetails details, BoxConstraints constraints) {
@@ -317,8 +320,8 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
 
   @override
   void initState() {
-    _wsUrl = widget.wsUrl;
-    channel = IOWebSocketChannel.connect(widget.wsUrl);
+    // _wsUrl = widget.wsUrl;
+    // channel = IOWebSocketChannel.connect(widget.wsUrl);
     initCamera();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
     getPermissionStatus();
@@ -332,7 +335,8 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
     //     widget.onError(result['error']);
     //   }
     // });
-    listenWs();
+
+    // listenWs();
   }
 
   @override
