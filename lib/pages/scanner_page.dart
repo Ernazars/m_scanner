@@ -293,9 +293,10 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
     },
     onDone: () {
       // widget.onErrorConnectWS(()=> reConnectWs());
-      show(context, errorWS ?? "Соединение потеряно, попробуйте ещё раз");
+      // show(context, errorWS ?? "Соединение потеряно, попробуйте ещё раз");
       channel = null;
       isCheck.value = false;
+      show(context, errorWS ?? "Соединение потеряно, попробуйте ещё раз");
     },
     onError: (_) {
       errorWS = _.toString();
