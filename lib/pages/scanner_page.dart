@@ -339,14 +339,15 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
     getPermissionStatus();
     initChannel();
-    // WidgetsBinding.instance?.addPostFrameCallback((_){
-    //   if(controller?.value.isInitialized?? false){
-    //     ovalRect(controller!.value.aspectRatio);
-    //     _wsUrl = widget.wsUrl;
-    //     channel = IOWebSocketChannel.connect(widget.wsUrl);
-    //     listenWs();
-    //   }
-    // });
+    WidgetsBinding.instance?.addPostFrameCallback((_){
+      if(controller?.value.isInitialized?? false){
+        // ovalRect(controller!.value.aspectRatio);
+        _wsUrl = widget.wsUrl;
+        channel = IOWebSocketChannel.connect(widget.wsUrl);
+        listenWs();
+        ovalRect(controller!.value.aspectRatio);
+      }
+    });
     super.initState();
   }
 
