@@ -212,10 +212,7 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
         _isCameraInitialized = controller!.value.isInitialized;
       });
     }
-    // ovalRect(controller!.value.aspectRatio);
-    // _wsUrl = widget.wsUrl;
-    // channel = IOWebSocketChannel.connect(widget.wsUrl);
-    // listenWs();
+    ovalRect(controller!.value.aspectRatio);
   }
 
   void onViewFinderTap(TapDownDetails details, BoxConstraints constraints) {
@@ -298,7 +295,6 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
       widget.onErrorConnectWS(()=> reConnectWs());
       channel = null;
       isActiveButton.value = false;
-      // show(context, errorWS ?? "Соединение потеряно, попробуйте ещё раз");
     },
     onError: (_) {
       if(_ is WebSocketChannelException){
@@ -320,16 +316,12 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
 
   @override
   void initState() {
-    // _wsUrl = widget.wsUrl;
-    // channel = IOWebSocketChannel.connect(widget.wsUrl);
     initCamera();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
     getPermissionStatus();
     WidgetsBinding.instance?.addPostFrameCallback((_){
-        // ovalRect(controller!.value.aspectRatio);
         channel = IOWebSocketChannel.connect(widget.wsUrl);
         listenWs();
-        ovalRect(controller!.value.aspectRatio);
     });
     super.initState();
   }
