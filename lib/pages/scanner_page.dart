@@ -52,7 +52,6 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
   double? top;
   double? _x, _y;
   final GlobalKey _key = GlobalKey();
-  Future? _initCamera;
 
   // Current values
   double _currentZoomLevel = 1.0;
@@ -187,7 +186,7 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
     });
 
     try {
-      _initCamera = await cameraController.initialize().then((value) => null);
+      await cameraController.initialize();
       await Future.wait([
         cameraController
             .getMinExposureOffset()
@@ -319,14 +318,6 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
       isLoading.value = false;
   }
 
-  initChannel() {
-    if(_isCameraInitialized){
-        ovalRect(controller!.value.aspectRatio);
-        channel = IOWebSocketChannel.connect(widget.wsUrl);
-        listenWs();
-      }
-  }
-
   @override
   void initState() {
     // _wsUrl = widget.wsUrl;
@@ -334,14 +325,11 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
     initCamera();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
     getPermissionStatus();
-    initChannel();
     WidgetsBinding.instance?.addPostFrameCallback((_){
-      if(controller?.value.isInitialized?? false){
         // ovalRect(controller!.value.aspectRatio);
         channel = IOWebSocketChannel.connect(widget.wsUrl);
         listenWs();
         ovalRect(controller!.value.aspectRatio);
-      }
     });
     super.initState();
   }
@@ -399,25 +387,15 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
                                   );
                                 }),
                               ),
-                              FutureBuilder(
-                                future: _initCamera,
-                                builder: (context, snapshot) {
-                                  if (snapshot.connectionState == ConnectionState.done &&
-                                        controller?.value.isInitialized == true) {
-                                        return  CustomPaint(
-                                            child: ClipPath(
-                                                clipper: OvalClipper(rect),
-                                                child: Transform.scale(
-                                                    scale: controller!.value.aspectRatio /
-                                                        deviceRatio,
-                                                    child: Center(
-                                                        child: Container(
-                                                            color: Colors.black54)))),
-                                          );
-                                        }else {
-                                          return const SizedBox();
-                                        }
-                              }
+                              CustomPaint(
+                                child: ClipPath(
+                                    clipper: OvalClipper(rect),
+                                    child: Transform.scale(
+                                        scale: controller!.value.aspectRatio /
+                                            deviceRatio,
+                                        child: Center(
+                                            child: Container(
+                                                color: Colors.black54)))),
                               ),
                               Center(
                                 child: SizedBox(
