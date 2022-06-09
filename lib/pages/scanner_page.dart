@@ -37,8 +37,6 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
   IOWebSocketChannel?
       channel; // = IOWebSocketChannel.connect('ws://164.92.179.69/ws/');
 
-  late String _wsUrl;
-
   // File? _imageFile;
   ValueNotifier isLoading = ValueNotifier(false);
 
@@ -54,6 +52,7 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
   double? top;
   double? _x, _y;
   final GlobalKey _key = GlobalKey();
+  Future? _initCamera;
 
   // Current values
   double _currentZoomLevel = 1.0;
@@ -66,7 +65,8 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
 
   ResolutionPreset currentResolutionPreset = ResolutionPreset.high;
 
-  final ValueNotifier<bool> isCheck = ValueNotifier<bool>(true);
+  final ValueNotifier<bool> isActiveButton = ValueNotifier<bool>(true);
+
 
   getPermissionStatus() async {
     await Permission.camera.request();
@@ -149,9 +149,6 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
     if (cameraController!.value.isTakingPicture) {
       return null;
     }
-    // if(channel == null) {
-    //   reConnectWs();
-    // }
 
     try {
       return await cameraController.takePicture();
@@ -190,7 +187,7 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
     });
 
     try {
-      await cameraController.initialize();
+      _initCamera = await cameraController.initialize().then((value) => null);
       await Future.wait([
         cameraController
             .getMinExposureOffset()
@@ -301,7 +298,7 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
       isLoading.value = false;
       widget.onErrorConnectWS(()=> reConnectWs());
       channel = null;
-      isCheck.value = false;
+      isActiveButton.value = false;
       // show(context, errorWS ?? "Соединение потеряно, попробуйте ещё раз");
     },
     onError: (_) {
@@ -316,8 +313,8 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
 
   reConnectWs(){
       isLoading.value = true;
-      channel = IOWebSocketChannel.connect(_wsUrl);
-      isCheck.value = true;
+      channel = IOWebSocketChannel.connect(widget.wsUrl);
+      isActiveButton.value = true;
       listenWs();
       isLoading.value = false;
   }
@@ -325,7 +322,6 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
   initChannel() {
     if(_isCameraInitialized){
         ovalRect(controller!.value.aspectRatio);
-        _wsUrl = widget.wsUrl;
         channel = IOWebSocketChannel.connect(widget.wsUrl);
         listenWs();
       }
@@ -342,7 +338,6 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
     WidgetsBinding.instance?.addPostFrameCallback((_){
       if(controller?.value.isInitialized?? false){
         // ovalRect(controller!.value.aspectRatio);
-        _wsUrl = widget.wsUrl;
         channel = IOWebSocketChannel.connect(widget.wsUrl);
         listenWs();
         ovalRect(controller!.value.aspectRatio);
@@ -404,15 +399,25 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
                                   );
                                 }),
                               ),
-                              CustomPaint(
-                                child: ClipPath(
-                                    clipper: OvalClipper(rect),
-                                    child: Transform.scale(
-                                        scale: controller!.value.aspectRatio /
-                                            deviceRatio,
-                                        child: Center(
-                                            child: Container(
-                                                color: Colors.black54)))),
+                              FutureBuilder(
+                                future: _initCamera,
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState == ConnectionState.done &&
+                                        controller?.value.isInitialized == true) {
+                                        return  CustomPaint(
+                                            child: ClipPath(
+                                                clipper: OvalClipper(rect),
+                                                child: Transform.scale(
+                                                    scale: controller!.value.aspectRatio /
+                                                        deviceRatio,
+                                                    child: Center(
+                                                        child: Container(
+                                                            color: Colors.black54)))),
+                                          );
+                                        }else {
+                                          return const SizedBox();
+                                        }
+                              }
                               ),
                               Center(
                                 child: SizedBox(
@@ -699,9 +704,9 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
                                         // ),
                                         // const SizedBox(width: 32),
                                         ValueListenableBuilder(
-                                          valueListenable: isCheck,
+                                          valueListenable: isActiveButton,
                                           builder: (context, value, child) => SizedBox(
-                                          child: isCheck.value
+                                          child: isActiveButton.value
                                             ? InkWell(
                                             onTap: () async {
                                               _getOffset(_key);
